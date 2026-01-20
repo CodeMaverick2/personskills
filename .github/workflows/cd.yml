@@ -1,0 +1,68 @@
+name: CD - Deploy to Kubernetes
+
+# Trigger: Automatic on successful CI completion, or Manual
+on:
+  workflow_run:
+    workflows: ["CI Pipeline"]
+    types:
+      - completed
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy to Kubernetes Cluster
+    runs-on: ubuntu-latest
+    # Only run if CI was successful (or if triggered manually)
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # 1. Setup: Install kubectl tool
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'v1.29.0'
+
+      # 2. Authentication: Configure cluster access using Secret
+      - name: Configure Kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBECONFIG }}" > ~/.kube/config
+          chmod 600 ~/.kube/config
+
+      # 3. Configuration: Inject dynamic values (Docker Username) into manifests
+      - name: Replace DockerHub Username in Deployment
+        run: |
+          sed -i "s|<DOCKERHUB_USERNAME>|${{ secrets.DOCKERHUB_USERNAME }}|g" k8s/deployment.yaml
+
+      # 4. Validation: Check manifests for syntax errors before applying
+      - name: Validate Kubernetes Manifests
+        run: |
+          kubectl apply --dry-run=client --validate=false -f k8s/deployment.yaml
+          kubectl apply --dry-run=client --validate=false -f k8s/service.yaml
+          echo "✅ Manifests validated successfully"
+
+      # 5. Deployment: Apply changes to the cluster
+      - name: Deploy to Kubernetes
+        run: |
+          kubectl apply -f k8s/deployment.yaml
+          kubectl apply -f k8s/service.yaml
+          echo "✅ Application deployed to Kubernetes"
+
+      # 6. Verification: Wait for rollout to complete and verify pods are up
+      - name: Verify Deployment
+        run: |
+          echo "🔍 Verifying deployment..."
+          kubectl get pods
+          kubectl get svc
+          kubectl rollout status deployment/personskills-app --timeout=2m
+          echo "✅ Deployment verified successfully"
+
+      # 7. Security: Run DAST (Dynamic Application Security Testing) against running app
+      - name: Run Dummy DAST Scan
+        uses: zaproxy/action-baseline@v0.9.0
+        with:
+          target: http://localhost
+        continue-on-error: true

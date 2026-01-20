@@ -9,45 +9,96 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+/**
+ * Service class for managing Skill entities.
+ * Provides business logic for skill operations.
+ */
 @Service
 @Transactional
-public class SkillService {
+public final class SkillService {
 
+    /**
+     * Repository for skill data access.
+     */
     private final SkillRepository skillRepository;
 
+    /**
+     * Constructor for SkillService.
+     *
+     * @param repository the skill repository
+     */
     @Autowired
-    public SkillService(SkillRepository skillRepository) {
-        this.skillRepository = skillRepository;
+    public SkillService(final SkillRepository repository) {
+        this.skillRepository = repository;
     }
 
-    public Skill addSkill(Skill skill) {
+    /**
+     * Adds a new skill to the system.
+     *
+     * @param skill the skill to add
+     * @return the saved skill
+     */
+    public Skill addSkill(final Skill skill) {
         return skillRepository.save(skill);
     }
 
+    /**
+     * Retrieves all skills with their associated persons.
+     *
+     * @return list of all skills
+     */
     public List<Skill> getAllSkills() {
         return skillRepository.findAllWithPerson();
     }
 
-    public List<Skill> getSkillsByPersonId(Long personId) {
+    /**
+     * Retrieves all skills for a specific person.
+     *
+     * @param personId the ID of the person
+     * @return list of skills for the person
+     */
+    public List<Skill> getSkillsByPersonId(final Long personId) {
         return skillRepository.findByPersonId(personId);
     }
 
-    public Skill getSkillById(Long id) {
+    /**
+     * Retrieves a skill by its ID.
+     *
+     * @param id the skill ID
+     * @return the skill
+     * @throws EntityNotFoundException if skill not found
+     */
+    public Skill getSkillById(final Long id) {
         return skillRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Skill not found with id: " + id));
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Skill not found with id: " + id));
     }
 
-    public Skill updateSkill(Long id, Skill skillDetails) {
+    /**
+     * Updates an existing skill.
+     *
+     * @param id           the skill ID
+     * @param skillDetails the updated skill details
+     * @return the updated skill
+     */
+    public Skill updateSkill(final Long id, final Skill skillDetails) {
         Skill skill = getSkillById(id);
         skill.setSkillName(skillDetails.getSkillName());
         skill.setLevel(skillDetails.getLevel());
         return skillRepository.save(skill);
     }
 
-    public void deleteSkill(Long id) {
+    /**
+     * Deletes a skill by its ID.
+     *
+     * @param id the skill ID
+     * @throws EntityNotFoundException if skill not found
+     */
+    public void deleteSkill(final Long id) {
         if (!skillRepository.existsById(id)) {
-            throw new EntityNotFoundException("Skill not found with id: " + id);
+            throw new EntityNotFoundException(
+                    "Skill not found with id: " + id);
         }
         skillRepository.deleteById(id);
     }
-} 
+}

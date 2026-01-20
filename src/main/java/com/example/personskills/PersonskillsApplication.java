@@ -3,11 +3,27 @@ package com.example.personskills;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
+/**
+ * Main Spring Boot application class for Person Skills Management.
+ * This class serves as the entry point for the application.
+ */
 @SpringBootApplication
-public class PersonskillsApplication {
+public final class PersonskillsApplication {
 
-	public static void main(String[] args) {
-		SpringApplication.run(PersonskillsApplication.class, args);
-	}
+    /**
+     * Private constructor to prevent instantiation.
+     */
+    private PersonskillsApplication() {
+        throw new UnsupportedOperationException("Utility class");
+    }
+
+    /**
+     * Main method to start the Spring Boot application.
+     *
+     * @param args command line arguments
+     */
+    public static void main(final String[] args) {
+        SpringApplication.run(PersonskillsApplication.class, args);
+    }
 
 }

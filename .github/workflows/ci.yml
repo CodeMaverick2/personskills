@@ -1,0 +1,79 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [ master ]
+  workflow_dispatch:
+
+# Permissions required for CodeQL to upload security results
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    # 1. Checkout the code
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    # 2. Setup Java 17 environment
+    - name: Setup Runtime
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+
+    # 3. Code Quality: Run Checkstyle to enforce coding standards
+    - name: Linting
+      run: mvn checkstyle:check
+
+    # 4. Security: Initialize CodeQL for SAST (Static Application Security Testing)
+    - name: SAST
+      uses: github/codeql-action/init@v3
+      with:
+        languages: java
+
+    # Note: SCA (Software Composition Analysis) step is configured but currently disabled
+    # - name: SCA
+    #   run: mvn org.owasp:dependency-check-maven:check
+
+    # 5. Reliability: Run Unit Tests to ensure logic is correct
+    - name: Unit Tests
+      run: mvn test
+
+    # 6. Build: Create the executable JAR file
+    - name: Build
+      run: mvn package -DskipTests
+
+    # 7. Security: Analyze the code for vulnerabilities (SQL Injection, etc.)
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v3
+
+    # 8. Containerization: Build the Docker image
+    - name: Docker Build
+      run: docker build -t personskills:latest .
+
+    # 9. Security: Scan the Docker image for OS/Package vulnerabilities using Trivy
+    - name: Image Scan
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'image'
+        scan-ref: 'personskills:latest'
+
+    # 10. Verification: Start the container and check if it runs (Smoke Test)
+    - name: Runtime Test
+      run: |
+        docker run -d --name test-app -p 8080:8080 personskills:latest
+        sleep 10
+        docker stop test-app
+        docker rm test-app
+
+    # 11. Delivery: Push the verified image to DockerHub
+    - name: Registry Push
+      run: |
+        docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_TOKEN }}
+        docker tag personskills:latest ${{ secrets.DOCKERHUB_USERNAME }}/personskills:latest
+        docker push ${{ secrets.DOCKERHUB_USERNAME }}/personskills:latest

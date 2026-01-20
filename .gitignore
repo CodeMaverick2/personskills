@@ -31,3 +31,53 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### GitHub Actions Runner ###
+actions-runner/
+
+### Build artifacts ###
+target/
+*.jar
+*.war
+*.ear
+*.class
+
+### IDE files ###
+.idea/
+*.iws
+*.iml
+*.ipr
+
+### OS files ###
+.DS_Store
+Thumbs.db
+
+### Logs ###
+*.log
+logs/
+
+### Maven ###
+.mvn/wrapper/maven-wrapper.jar
+
+### Temporary files ###
+*.tmp
+*.temp
+*.bak
+
+### Node modules (if any) ###
+node_modules/
+
+### Docker ###
+.dockerignore
+
+### Kubernetes ###
+# Keep k8s manifests but ignore temp files
+*.kube/
+
+### Large binary files ###
+*.exe
+*.dll
+*.so
+*.dylib
+*.zip
+*.tar.gz

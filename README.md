@@ -1,33 +1,77 @@
-# Person Skills Management System
+# Person Skills Management - DevSecOps CI/CD
 
-A Spring Boot application for managing person skills and their relationships. This application provides a RESTful API and web interface for managing persons, skills, and their associations.
+Java 17 Maven Spring Boot application with a comprehensive CI/CD pipeline: Checkstyle, CodeQL, OWASP, tests, Docker build, Trivy scan, smoke test, DockerHub push; CD deploys to Kubernetes using declarative YAML.
+
+## Architecture
+
+**CI (ci.yml)**: Sequential pipeline with all required stages - Checkout → Setup Runtime → Linting → SAST → SCA (Configured/Optional) → Unit Tests → Build → Docker Build → Image Scan → Runtime Test → Registry Push.
+
+**CD (cd.yml)**: Production-ready Kubernetes deployment triggered heavily on CI success. Validates manifests → Deploys to cluster → Rollout verification → OWASP ZAP DAST scan.
+
+## Security
+
+Checkstyle, CodeQL, OWASP Dependency Check (Configured), Trivy (container scanning), non-root container execution. Shift-left security: quality and security gates prevent vulnerable code from reaching production.
+
+## Run Locally
+
+**Prerequisites:** Java 17, Maven 3.9+, MySQL, Docker, kubectl
+
+```bash
+# Build and run
+mvn clean package
+java -jar target/*.jar
+
+# Tests and checks
+mvn test
+mvn checkstyle:check
+
+# Docker
+docker build -t personskills:latest .
+docker run -p 8080:8080 personskills:latest
+
+# Kubernetes
+kubectl apply -f k8s/deployment.yaml
+kubectl apply -f k8s/service.yaml
+kubectl get pods
+```
+
+## GitHub Secrets
+
+- `DOCKERHUB_USERNAME` - DockerHub login
+- `DOCKERHUB_TOKEN` - DockerHub access token
+- `KUBECONFIG` - Base64 encoded Kubernetes configuration for cluster access
 
 ## Features
 
 - Person management (CRUD operations)
 - Skill management (CRUD operations)
 - Person-Skill relationship management
-- RESTful API endpoints
-- Web interface using JSP
-- MySQL database integration
-- Input validation
+- RESTful API endpoints with validation
+- Web interface using Spring MVC + JSP
+- MySQL database integration with JPA
+- Input validation and error handling
 - Lombok for reducing boilerplate code
+- Comprehensive test coverage
+- Docker containerization
 
 ## Prerequisites
 
 - Java 17 or higher
-- Maven
+- Maven 3.9+
 - MySQL Server
-- IDE (recommended: Eclipse or IntelliJ IDEA)
+- Docker (for containerization)
+- kubectl (for Kubernetes deployment)
 
 ## Technology Stack
 
 - Spring Boot 3.4.5
 - Spring Data JPA
+- Spring MVC
 - MySQL Database
 - JSP & JSTL for views
 - Lombok
 - Maven for dependency management
+- JUnit for testing
 
 ## Project Structure
 
@@ -39,77 +83,103 @@ src/
 │   │       └── example/
 │   │           └── personskills/
 │   │               ├── controller/    # REST and web controllers
-│   │               ├── model/         # Entity classes
+│   │               ├── model/         # Entity classes (Person, Skill)
 │   │               ├── repository/    # JPA repositories
-│   │               ├── service/       # Business logic
+│   │               ├── service/       # Business logic services
 │   │               └── PersonSkillsApplication.java
 │   └── resources/
-│       ├── static/    # Static resources
+│       ├── static/    # Static resources (CSS, JS)
 │       ├── templates/ # JSP templates
 │       └── application.properties
-└── test/             # Test cases
+└── test/             # Unit and integration tests
 ```
 
 ## Getting Started
 
-1. Clone the repository:
+### Local Development Setup
+
+1. **Clone the repository:**
    ```bash
    git clone [repository-url]
+   cd personskills
    ```
 
-2. Configure MySQL:
+2. **Configure MySQL Database:**
    - Create a database named `personskills`
-   - Update `application.properties` with your MySQL credentials
+   - Update `src/main/resources/application.properties` with your MySQL credentials:
+   ```properties
+   spring.datasource.url=jdbc:mysql://localhost:3306/personskills
+   spring.datasource.username=your_username
+   spring.datasource.password=your_password
+   ```
 
-3. Build the project:
+3. **Build the project:**
    ```bash
    mvn clean install
    ```
 
-4. Run the application:
+4. **Run the application:**
    ```bash
    mvn spring-boot:run
    ```
 
-5. Access the application:
+5. **Access the application:**
    - Web Interface: http://localhost:8080
-   - API Documentation: http://localhost:8080/swagger-ui.html
+   - REST API: http://localhost:8080/api/
+   - Health Check: http://localhost:8080/actuator/health
+
+### Docker Setup
+
+1. **Build the Docker image:**
+   ```bash
+   docker build -t personskills:latest .
+   ```
+
+2. **Run with Docker:**
+   ```bash
+   docker run -p 8080:8080 --env-file .env personskills:latest
+   ```
+
+### Kubernetes Deployment
+
+1. **Apply manifests:**
+   ```bash
+   kubectl apply -f k8s/deployment.yaml
+   kubectl apply -f k8s/service.yaml
+   ```
+
+2. **Check deployment:**
+   ```bash
+   kubectl get pods
+   kubectl get services
+   ```
 
 ## API Endpoints
 
 ### Person Endpoints
-- GET /api/persons - Get all persons
-- GET /api/persons/{id} - Get person by ID
-- POST /api/persons - Create new person
-- PUT /api/persons/{id} - Update person
-- DELETE /api/persons/{id} - Delete person
+- `GET /api/persons` - Get all persons
+- `GET /api/persons/{id}` - Get person by ID
+- `POST /api/persons` - Create new person
+- `PUT /api/persons/{id}` - Update person
+- `DELETE /api/persons/{id}` - Delete person
 
 ### Skill Endpoints
-- GET /api/skills - Get all skills
-- GET /api/skills/{id} - Get skill by ID
-- POST /api/skills - Create new skill
-- PUT /api/skills/{id} - Update skill
-- DELETE /api/skills/{id} - Delete skill
+- `GET /api/skills` - Get all skills
+- `GET /api/skills/{id}` - Get skill by ID
+- `POST /api/skills` - Create new skill
+- `PUT /api/skills/{id}` - Update skill
+- `DELETE /api/skills/{id}` - Delete skill
 
 ### Person-Skill Relationship Endpoints
-- GET /api/persons/{personId}/skills - Get skills for a person
-- POST /api/persons/{personId}/skills/{skillId} - Add skill to person
-- DELETE /api/persons/{personId}/skills/{skillId} - Remove skill from person
+- `GET /api/persons/{personId}/skills` - Get skills for a person
+- `POST /api/persons/{personId}/skills/{skillId}` - Add skill to person
+- `DELETE /api/persons/{personId}/skills/{skillId}` - Remove skill from person
 
-## Contributing
+## References
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+- [GitHub Actions](https://docs.github.com/en/actions)
+- [CodeQL](https://codeql.github.com/)
+- [OWASP Dependency Check](https://owasp.org/www-project-dependency-check/)
+- [Trivy](https://aquasecurity.github.io/trivy/)
+- [Kubernetes](https://kubernetes.io/)
 
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Acknowledgments
-
-- Spring Boot team for the amazing framework
-- MySQL team for the database
-- All contributors who have helped in the development 

@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: personskills-service
+  labels:
+    app: personskills
+spec:
+  selector:
+    app: personskills
+  ports:
+  - port: 80
+    targetPort: 8080
+    protocol: TCP
+  type: LoadBalancer
