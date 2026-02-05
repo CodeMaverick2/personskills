@@ -17,3 +17,6 @@ spec:
         image: <DOCKERHUB_USERNAME>/personskills:latest
         ports:
         - containerPort: 8080
+        env:
+        - name: SPRING_DATASOURCE_URL
+          value: jdbc:mysql://mysql-service:3306/personskills?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true

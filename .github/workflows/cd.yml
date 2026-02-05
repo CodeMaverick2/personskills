@@ -11,7 +11,10 @@ on:
 jobs:
   deploy:
     name: Deploy to Kubernetes Cluster
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
+    defaults:
+      run:
+        shell: cmd
     # Only run if CI was successful (or if triggered manually)
     if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
 
@@ -25,40 +28,38 @@ jobs:
         with:
           version: 'v1.29.0'
 
-      # 2. Authentication: Configure cluster access using Secret
-      - name: Configure Kubeconfig
-        run: |
-          mkdir -p ~/.kube
-          echo "${{ secrets.KUBECONFIG }}" > ~/.kube/config
-          chmod 600 ~/.kube/config
+      # 2. Authentication: Self-hosted runner uses local kubeconfig automatically
+      # No need to configure kubeconfig - runner has access to local ~/.kube/config
 
       # 3. Configuration: Inject dynamic values (Docker Username) into manifests
       - name: Replace DockerHub Username in Deployment
-        run: |
-          sed -i "s|<DOCKERHUB_USERNAME>|${{ secrets.DOCKERHUB_USERNAME }}|g" k8s/deployment.yaml
+        run: powershell -ExecutionPolicy Bypass -Command "(Get-Content k8s/deployment.yaml) -replace '<DOCKERHUB_USERNAME>', '${{ secrets.DOCKERHUB_USERNAME }}' | Set-Content k8s/deployment.yaml"
+        shell: cmd
 
       # 4. Validation: Check manifests for syntax errors before applying
       - name: Validate Kubernetes Manifests
         run: |
+          kubectl apply --dry-run=client --validate=false -f k8s/mysql.yaml
           kubectl apply --dry-run=client --validate=false -f k8s/deployment.yaml
           kubectl apply --dry-run=client --validate=false -f k8s/service.yaml
-          echo "✅ Manifests validated successfully"
+          echo Manifests validated successfully
 
-      # 5. Deployment: Apply changes to the cluster
+      # 5. Deployment: Deploy MySQL first, then the application
       - name: Deploy to Kubernetes
         run: |
+          kubectl apply -f k8s/mysql.yaml
           kubectl apply -f k8s/deployment.yaml
           kubectl apply -f k8s/service.yaml
-          echo "✅ Application deployed to Kubernetes"
+          echo Application deployed to Kubernetes
 
       # 6. Verification: Wait for rollout to complete and verify pods are up
       - name: Verify Deployment
         run: |
-          echo "🔍 Verifying deployment..."
+          echo Verifying deployment...
           kubectl get pods
           kubectl get svc
           kubectl rollout status deployment/personskills-app --timeout=2m
-          echo "✅ Deployment verified successfully"
+          echo Deployment verified successfully
 
       # 7. Security: Run DAST (Dynamic Application Security Testing) against running app
       - name: Run Dummy DAST Scan

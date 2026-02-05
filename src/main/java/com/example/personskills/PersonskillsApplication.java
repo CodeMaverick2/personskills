@@ -11,10 +11,10 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public final class PersonskillsApplication {
 
     /**
-     * Private constructor to prevent instantiation.
+     * Private constructor to satisfy Checkstyle
+     * HideUtilityClassConstructor rule.
      */
     private PersonskillsApplication() {
-        throw new UnsupportedOperationException("Utility class");
     }
 
     /**
